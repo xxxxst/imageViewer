@@ -11,6 +11,7 @@ import MainCtl from '../../../control/MainCtl';
 import ComUtil from '../../../util/ComUtil';
 import IInnerServer from '../../../util/IInnerServer';
 import EnvMd from '../../../model/EnvMd';
+import TimeFormat from 'src/sdk/tsHelp/util/TimeFormat';
 
 declare var CP: any;
 
@@ -25,10 +26,12 @@ export default class Home extends Vue {
 
 	lstData = [];
 	scale = 1;
+	downImageIdx = -1;
 	selectItem = null;
 	showPreviewBox = true;
 
 	selectScale = 1;
+	selectOriginSize = {w:1, h:1};
 	selectSize = {w:1, h:1};
 	selectPos = {x:0, y:0};
 	downSelect = false;
@@ -142,6 +145,7 @@ export default class Home extends Vue {
 	anoOnMouseup = (a)=>this.onMouseup(a);
 	onMouseup(evt) {
 		this.downSelect = false;
+		this.downImageIdx = -1;
 
 		if(!this.isDownColorCont) {
 			this.isDownColorCont = false;
@@ -237,6 +241,7 @@ export default class Home extends Vue {
 		}
 		var rst = await axios.post(url, md);
 
+		this.downImageIdx = -1;
 		this.selectItem = null;
 
 		var arr = rst.data;
@@ -333,12 +338,35 @@ export default class Home extends Vue {
 		// console.info(ele.width, ele.height);
 	}
 
-	onClickImage(evt, it) {
+	onDownImage(idx) {
+		this.downImageIdx = idx;
+	}
+
+	onUpImage(evt, it, idx) {
+		if(this.downImageIdx != idx) {
+			this.downImageIdx = -1;
+			return;
+		}
+		this.downImageIdx = -1;
+
+		if(this.selectItem == it) {
+			return;
+		}
+
 		// if(this.selectItem == it) {
 		// 	this.selectItem = null;
 		// } else {
 		// 	this.selectItem = it;
 		// }
+		var eleImg:any = this.$refs.detailImg;
+		if(eleImg) {
+			$(eleImg).css("width", "");
+			$(eleImg).css("height", "");
+			$(eleImg).css("left", "");
+			$(eleImg).css("top", "");
+			$(eleImg).css("visibility", "");
+		}
+
 		this.selectItem = it;
 		
 		if(evt.button == 2) {
@@ -351,7 +379,7 @@ export default class Home extends Vue {
 	}
 
 	onDetailImageLoad(evt) {
-		var box:any = this.$refs.detailBox;
+		var box:any = this.$refs.detailImgBox;
 		var ele:any = this.$refs.detailImg;
 		// var ele = evt.path[0];
 
@@ -360,6 +388,9 @@ export default class Home extends Vue {
 		}
 		var w = ele.width;
 		var h = ele.height;
+
+		this.selectOriginSize.w = w;
+		this.selectOriginSize.h = h;
 
 		var boxW = $(box).width();
 		var boxH = $(box).height();
@@ -387,7 +418,7 @@ export default class Home extends Vue {
 	}
 
 	updateDetailPos() {
-		var box:any = this.$refs.detailBox;
+		var box:any = this.$refs.detailImgBox;
 		var ele:any = this.$refs.detailImg;
 		if(!box || !ele) {
 			return;
@@ -487,6 +518,36 @@ export default class Home extends Vue {
 			this.selectPos.y = y;
 			this.updateDetailPos();
 		}
+	}
+
+	formatSize(size) {
+		var arr = ["K", "M", "G", "T"];
+		var unit = "";
+
+		var idx = arr.length - 1;
+		for(var i = 0; i < arr.length; ++i) {
+			var val = Math.pow(10, (i+1)*3);
+			if(size < val) {
+				idx = i - 1;
+				break;
+			}
+		}
+		if(idx >= 0) {
+			var val = Math.pow(10, (idx+1)*3);
+			size = (size/val).toFixed(2);
+			unit = arr[idx];
+		}
+
+		if(unit != "") {
+			unit += "B"
+		}
+
+		return size + unit;
+	}
+
+	formatTime(time) {
+		return TimeFormat.format(new Date(time*1000), "yyyy/MM/dd hh:mm:ss");
+		return time;
 	}
 
 };

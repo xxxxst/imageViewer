@@ -27,23 +27,37 @@
 		</div>
 
 		<div class="content" ref="content" :style="{background:colorRgb}" :class="{'content-select': showPreviewBox}">
-			<div class="item-box" v-for="(it,idx) in lstData" :key="idx" :style="getItemBoxStyle()" @mouseup="onClickImage($event, it)">
+			<div class="item-box" v-for="(it,idx) in lstData" :key="idx" :style="getItemBoxStyle()" @mousedown="onDownImage(idx)" @mouseup="onUpImage($event, it, idx)">
 				<div class="item" :class="{select:it===selectItem}">
 					<div class="img-box" :style="getItemStyle()">
 					<!-- <div class="img-box"> -->
-						<img :src="getIcon(it)" alt="" @load="onImageLoad($event, it)">
+						<img :src="getIcon(it)" alt="" @load="onImageLoad($event, it)" v-noDrag>
 					</div>
 					<div class="lbl">{{it.name}}</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="detail-box" ref="detailBox" :style="{background:colorRgb}" @mousewheel="onDetailMousewheel($event)" @mousedown="onDownSelect($event)" v-show="showPreviewBox">
-			<img v-if="selectItem" ref="detailImg" :src="getIcon(selectItem)" alt="" @load="onDetailImageLoad($event)">
+		<div class="detail-box" v-show="showPreviewBox" :style="{background:colorRgb}">
+			<div class="title-box" v-if="selectItem">
+				<div class="row">
+					<div class="lbl">尺寸:</div>
+					<div class="size">{{selectOriginSize.w}} * {{selectOriginSize.h}}</div>
+				</div>
+				<div class="row">
+					<div class="lbl">大小:</div>
+					<div class="size">{{formatSize(selectItem.size)}}</div>
+				</div>
+				<div class="row">
+					<div class="lbl">修改日期:</div>
+					<div class="size">{{formatTime(selectItem.modifyTime)}}</div>
+				</div>
+			</div>
+			<div class="img-box" ref="detailImgBox" @mousewheel="onDetailMousewheel($event)" @mousedown="onDownSelect($event)">
+				<img v-if="selectItem" ref="detailImg" :src="getIcon(selectItem)" alt="" @load="onDetailImageLoad($event)">
+			</div>
 		</div>
 	</div>
-
-
 </div>
 </template>
 
@@ -58,22 +72,22 @@ export default Home;
 .home {
 	position: absolute; width: 100%; height: 100%; top: 0; left: 0;
 	>.center-cont {
-		position: absolute; top: 0; left: 20px; right: 20px; bottom: 20px;
+		position: absolute; top: 0; left: 10px; right: 10px; bottom: 20px;
 		>.top-box {
-			position: relative; width: 100%; height: 40px; margin-top: 20px; z-index: 10;
+			position: relative; width: 100%; height: 30px; margin-top: 10px; z-index: 10;
 			>.input-box {
-				position: absolute; display: inline-block; top: 0; left: 0; right: 50px; height: 100%;
+				position: absolute; display: inline-block; top: 0; left: 0; right: 40px; height: 100%;
 				>input { width: 100%; height: 100%; background: transparent; padding-left: 8px; border: 1px solid #000; border-radius: 8px; }
 			}
 			>.right-box {
 				position: absolute; display: inline-block; top: 0; right: 0; vertical-align: top;
 				>.color-box {
-					cursor: pointer; display: inline-block; width: 40px; height: 40px; border: 1px solid #c2c2c2; padding: 3px; border-radius: 5px;
+					cursor: pointer; display: inline-block; width: 30px; height: 30px; border: 1px solid #c2c2c2; padding: 3px; border-radius: 5px;
 					>.color-view { width: 100%; height: 100%; border-radius: 5px; }
 					&:hover { border: 1px solid #858585; }
 				}
 				>.color-picker-box {
-					position: absolute; display: inline-block; right: 0; top: 45px; padding: 8px; background: #fff; border: 1px solid #a5a5a5; border-radius: 4px;
+					position: absolute; display: inline-block; right: 0; top: 35px; padding: 8px; background: #fff; border: 1px solid #a5a5a5; border-radius: 4px;
 					>.color-picker { width: 100%; height: 100%; }
 					>.bottom-box {
 						margin-top: 5px;
@@ -91,7 +105,7 @@ export default Home;
 			}
 		}
 		>.content {
-			position: absolute; top: 80px; bottom: 0; left: 0; right: 0; border: 1px solid #000; border-radius: 8px; padding: 8px; overflow: hidden; overflow-y: auto; @include scrollbar(6px);
+			position: absolute; top: 50px; bottom: 0; left: 0; right: 0; border: 1px solid #000; border-radius: 8px; padding: 8px; overflow: hidden; overflow-y: auto; @include scrollbar(6px);
 			>.item-box {
 				// $w: 64px + 16px + 8px;
 				cursor: pointer; display: inline-block; width: 76px; padding: 1px; vertical-align: top;
@@ -110,8 +124,19 @@ export default Home;
 		}
 		>.content-select { right: 250px+5px; }
 		>.detail-box {
-			position: absolute; width: 250px; top: 80px; right: 0; bottom: 0; border: 1px solid #000; border-radius: 8px; overflow: hidden; @extend %ex-no-select;
-			>img { pointer-events: none; position: absolute; visibility: hidden; }
+			position: absolute; width: 250px; top: 50px; right: 0; bottom: 0; border: 1px solid #000; border-radius: 8px; overflow: hidden;
+			>.title-box {
+				background: #fff; width: 100%; padding: 4px 0; color: #000; font-size: 12px; text-align: center;
+				>.row {
+					display: table;
+					>.lbl { display: table-cell; line-height: 16px; width: 80px; font-weight: bold; text-align: left; padding-left: 5px; @extend %ex-one-line; }
+					>.size { display: table-cell; line-height: 16px; @extend %ex-one-line; }
+				}
+			}
+			>.img-box {
+				position: absolute; width: 100%; left: 0; top: 56px; bottom: 0; overflow: hidden; @extend %ex-no-select;
+				>img { pointer-events: none; position: absolute; visibility: hidden; }
+			}
 		}
 		>.bottom-box {
 			position: absolute; bottom: 0; width: 90%; height: 20px; left: 5%;
