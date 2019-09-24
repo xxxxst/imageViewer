@@ -64,7 +64,7 @@ export default class Lang {
 
 	langName: string = "简体中文";
 
-	webTitle: string = "cl doc";
+	webTitle: string = "imageViewer";
 
 	ok: string = "确定";
 	cancel: string = "取消";
