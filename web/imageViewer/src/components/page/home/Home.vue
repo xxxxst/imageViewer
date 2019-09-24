@@ -26,8 +26,8 @@
 			</div>
 		</div>
 
-		<div class="content" ref="content" :style="{background:colorRgb}" :class="{'content-select': selectItem!=null}">
-			<div class="item-box" v-for="(it,idx) in lstData" :key="idx" :style="getItemBoxStyle()" @click="onClickImage($event, it)">
+		<div class="content" ref="content" :style="{background:colorRgb}" :class="{'content-select': showPreviewBox}">
+			<div class="item-box" v-for="(it,idx) in lstData" :key="idx" :style="getItemBoxStyle()" @mouseup="onClickImage($event, it)">
 				<div class="item" :class="{select:it===selectItem}">
 					<div class="img-box" :style="getItemStyle()">
 					<!-- <div class="img-box"> -->
@@ -38,7 +38,7 @@
 			</div>
 		</div>
 
-		<div class="detail-box" ref="detailBox" :style="{background:colorRgb}" @mousewheel="onDetailMousewheel($event)" @mousedown="onDownSelect($event)" v-show="selectItem!=null">
+		<div class="detail-box" ref="detailBox" :style="{background:colorRgb}" @mousewheel="onDetailMousewheel($event)" @mousedown="onDownSelect($event)" v-show="showPreviewBox">
 			<img v-if="selectItem" ref="detailImg" :src="getIcon(selectItem)" alt="" @load="onDetailImageLoad($event)">
 		</div>
 	</div>

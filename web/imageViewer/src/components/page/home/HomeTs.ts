@@ -21,10 +21,12 @@ export default class Home extends Vue {
 	@SState("cdn") cdn:boolean;
 
 	path = "";
+	oldOncontextmenu: any = null;
 
 	lstData = [];
 	scale = 1;
 	selectItem = null;
+	showPreviewBox = true;
 
 	selectScale = 1;
 	selectSize = {w:1, h:1};
@@ -116,6 +118,9 @@ export default class Home extends Vue {
 	}
 	
 	mounted() {
+		this.oldOncontextmenu = document.oncontextmenu;
+		document.oncontextmenu = function (e) { return false; };
+		// document.addEventListener("oncontextmenu", this.anoOnContentmenu, { passive: false });
 		document.addEventListener("mousewheel", this.anoOnMousewheel, { passive: false });
 		document.addEventListener("mouseup", this.anoOnMouseup);
 		document.addEventListener("mousemove", this.anoOnMousemove);
@@ -125,7 +130,8 @@ export default class Home extends Vue {
 	}
 
 	destroyed() {
-		document.removeEventListener("mousewheel", this.anoOnMousewheel);
+		document.oncontextmenu = this.oldOncontextmenu;
+		// document.removeEventListener("oncontextmenu", this.anoOnContentmenu);
 		document.removeEventListener("mouseup", this.anoOnMouseup);
 		document.removeEventListener("mousemove", this.anoOnMousemove);
 		
@@ -151,6 +157,12 @@ export default class Home extends Vue {
 		this.isDownColorPicker = false;
 		this.isShowColorPicker = false;
 	}
+
+	// anoOnContentmenu = (a)=>this.onContentmenu(a);
+	// onContentmenu(evt) {
+	// 	evt.preventDefault();
+	// 	return false;
+	// }
 
 	anoOnMousewheel = (a)=>this.onMousewheel(a);
 	onMousewheel(evt) {
@@ -322,22 +334,20 @@ export default class Home extends Vue {
 	}
 
 	onClickImage(evt, it) {
-		if (evt.ctrlKey !== true && !evt.metaKey) {
-			if(this.selectItem == it) {
-				this.selectItem = null;
-			} else {
-				this.selectItem = it;
-			}
-			return;
-		}
-
-		// console.info(it);
+		// if(this.selectItem == it) {
+		// 	this.selectItem = null;
+		// } else {
+		// 	this.selectItem = it;
+		// }
+		this.selectItem = it;
 		
-		var ele: any = this.$refs.copyInput;
-		$(ele).val(it.name);
-		ele.select();
-		ele.setSelectionRange(0, ele.value.length);
-		document.execCommand("copy");
+		if(evt.button == 2) {
+			var ele: any = this.$refs.copyInput;
+			$(ele).val(it.name);
+			ele.select();
+			ele.setSelectionRange(0, ele.value.length);
+			document.execCommand("copy");
+		}
 	}
 
 	onDetailImageLoad(evt) {
