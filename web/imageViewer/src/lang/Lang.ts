@@ -62,20 +62,18 @@ export default class Lang {
 		this.configData.nowLang = langName;
 	}
 
-	langName: string = "简体中文";
+	langName: string = "default";
 
 	webTitle: string = "imageViewer";
 
-	ok: string = "确定";
-	cancel: string = "取消";
+	// ok: string = "确定";
+	// cancel: string = "取消";
 
-	week1: string = "星期一";
-	week2: string = "星期二";
-	week3: string = "星期三";
-	week4: string = "星期四";
-	week5: string = "星期五";
-	week6: string = "星期六";
-	week7: string = "星期七";
-
-	docLicense = "版权声明：本文为博主原创文章，未经博主允许不得转载。";
+	// week1: string = "星期一";
+	// week2: string = "星期二";
+	// week3: string = "星期三";
+	// week4: string = "星期四";
+	// week5: string = "星期五";
+	// week6: string = "星期六";
+	// week7: string = "星期七";
 }

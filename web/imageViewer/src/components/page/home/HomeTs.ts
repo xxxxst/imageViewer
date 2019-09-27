@@ -22,7 +22,10 @@ export default class Home extends Vue {
 	@SState("cdn") cdn:boolean;
 
 	path = "";
+	lstPath = [];
+	showQuickBox = true;
 	oldOncontextmenu: any = null;
+	isCopySuffix = true;
 
 	lstData = [];
 	scale = 1;
@@ -46,6 +49,16 @@ export default class Home extends Vue {
 
 	arrQuickColor = ["#fff", "#000", "#f00", "#0f0", "#00f", "#ff0", "#f0f", "#0ff"];
 
+	imgLoadedCount = 0;
+
+	lstSortType = [
+		{ key:"default", desc:"默认"},
+		{ key:"hue", desc:"色相"},
+		{ key:"modifyTime", desc:"修改日期"},
+		// { key:"complex", desc:"复杂度"},
+	];
+	sortType = "default";
+
 	get colorRgb() {
 		var c = this.objColor;
 		return `rgb(${c.r},${c.g},${c.b})`;
@@ -56,6 +69,11 @@ export default class Home extends Vue {
 		return `rgba(${c.r},${c.g},${c.b},${c.a})`;
 	}
 
+	@Watch("isCopySuffix")
+	onIsCopySuffixChanged() {
+		$.cookie('copy_suffix', this.isCopySuffix ? "1":"0", { expires: 9999, path: '/' });
+	}
+
 	@Watch("scale")
 	onScaleChanged() {
 		$.cookie('scale', this.scale.toString(), { expires: 9999, path: '/' });
@@ -63,6 +81,15 @@ export default class Home extends Vue {
 
 	@Watch("path")
 	onPathChanged() {
+		var newpath = this.path.replace(/[ ]*[\\/]+[ ]*/g, "/");
+		if(newpath != this.path) {
+			this.path = newpath;
+			return;
+		}
+
+		var tmp = this.path.replace(/([/]$)|(^[/])/g, "");
+		this.lstPath = tmp.split("/");
+
 		if(this.path) {
 			$.cookie('search_path', this.path, { expires: 9999, path: '/' });
 		}
@@ -80,6 +107,48 @@ export default class Home extends Vue {
 			var co = (this.objColor.r<<16) + (this.objColor.g<<8) + (this.objColor.b);
 			$.cookie('back_color', co.toString(), { expires: 9999, path: '/' });
 		}, 1000);
+	}
+
+	@Watch("sortType")
+	onSortTypeChanged() {
+		$.cookie('sort_type', this.sortType, { expires: 9999, path: '/' });
+
+		var arr = this.lstData;
+		switch(this.sortType) {
+			case "default": {
+				arr.sort((a,b)=>{
+					if(a.isDir ^ b.isDir) {
+						return a.isDir?-1:1;
+					}
+					var s1 = a.name.toLocaleLowerCase();
+					var s2 = b.name.toLocaleLowerCase();
+					if(s1 == s2) { return 0; }
+					return s1<s2?-1:1;
+				});
+				break;
+			}
+			case "hue": {
+				if(arr.length > 0 && ("_hue" in arr[0])) {
+					arr.sort((a,b)=>a._hue-b._hue);
+				} else if(this.imgLoadedCount == arr.length) {
+					this.onAllImageLoaded();
+				}
+				break;
+			}
+			case "modifyTime": {
+				arr.sort((a,b)=>a.modifyTime-b.modifyTime);
+				break;
+			}
+			// case "complex": {
+			// 	if(arr.length > 0 && ("_complex" in arr[0])) {
+			// 		arr.sort((a,b)=>a._complex-b._complex);
+			// 	} else if(this.imgLoadedCount == arr.length) {
+			// 		this.onAllImageLoaded();
+			// 	}
+			// 	// arr.sort((a,b)=>a.modifyTime-b.modifyTime);
+			// 	break;
+			// }
+		}
 	}
 
 	created() {
@@ -103,6 +172,16 @@ export default class Home extends Vue {
 		var pathTmp = $.cookie('search_path');
 		if(pathTmp) {
 			this.path = pathTmp;
+		}
+
+		var typeTmp = $.cookie('sort_type');
+		if(typeTmp) {
+			this.sortType = typeTmp;
+		}
+
+		var copySuffixTmp = $.cookie('copy_suffix');
+		if(copySuffixTmp!="") {
+			this.isCopySuffix = copySuffixTmp=="1";
 		}
 
 		var coTmp = $.cookie('back_color');
@@ -216,7 +295,7 @@ export default class Home extends Vue {
 			return it.src;
 		}
 
-		var root = "static/image/";
+		var root = "static/image/suffix/";
 		if(it.isDir) {
 			return root + "folder.png";
 		}
@@ -243,11 +322,14 @@ export default class Home extends Vue {
 
 		this.downImageIdx = -1;
 		this.selectItem = null;
+		this.imgLoadedCount = 0;
 
 		var arr = rst.data;
 		for(var i = 0; i < arr.length; ++i) {
 			arr[i].src = "";
 			arr[i].isImg = false;
+			arr[i].w = 0;
+			arr[i].h = 0;
 			if(arr[i].isDir) {
 				continue;
 			}
@@ -259,10 +341,22 @@ export default class Home extends Vue {
 
 			var path = this.path + "/" + arr[i].name;
 			// path = this.encodeBase64(path);
-			arr[i].src = `${MainModel.ins.serverUrl}file/get/0/${path}`;
+			arr[i].src = `${MainModel.ins.serverUrl}file/get/0/${path}?v=${Math.random()}`;
 		}
 
+		rst.data.sort((a,b)=>{
+			if(!a.isDir || !b.isDir) {
+				return a.isDir?-1:1;
+			}
+			var s1 = a.name.toLocaleLowerCase();
+			var s2 = b.name.toLocaleLowerCase();
+			if(s1 == s2) { return 0; }
+			return s1<s2?-1:1;
+		});
+
 		this.lstData = rst.data;
+
+		this.onSortTypeChanged();
 
 		// console.info(rst.data);
 	}
@@ -329,13 +423,87 @@ export default class Home extends Vue {
 		if(!ele) {
 			return;
 		}
+		$(ele).css("width", "");
+		$(ele).css("height", "");
+		$(ele).css("margin-left", "");
+
+		it.w = ele.width;
+		it.h = ele.height;
 		// console.info(evt, it);
 		if(ele.width >= ele.height) {
 			$(ele).css("width", "100%");
 		} else {
 			$(ele).css("height", "100%");
+			$(ele).css("margin-left", ((it.h-it.w)/it.h/2*100)+"%");
 		}
 		// console.info(ele.width, ele.height);
+		++this.imgLoadedCount;
+		if(this.imgLoadedCount == this.lstData.length) {
+			this.onAllImageLoaded();
+		}
+	}
+
+	onAllImageLoaded() {
+		var arr = this.lstData;
+
+		// if(this.sortType == "complex") {
+		// 	for(var i = 0;  i < arr.length; ++i) {
+		// 		var cpx = arr[i].size/(arr[i].w*arr[i].h);
+		// 		if(isNaN(cpx)) {
+		// 			cpx = 0;
+		// 		}
+		// 		arr[i]._complex = cpx;
+		// 	}
+		// 	arr.sort((a,b)=>a._complex-b._complex);
+		// 	return;
+		// }
+
+		if(this.sortType != "hue") {
+			return;
+		}
+
+		// console.info("aaa:", this.lstData);
+		var ele = this.$refs.cvsImg as HTMLCanvasElement;
+		var ctx = ele.getContext("2d");
+
+		// var arr = this.lstData;
+		for(var i = 0;  i < arr.length; ++i) {
+			if(!arr[i].isImg) {
+				arr[i]._hue = -99;
+				continue;
+			}
+			var w = 1;
+			var h = 1;
+
+			var img = $('#cont_img_'+i)[0];
+			if(!img) {
+				continue;
+			}
+			ctx.clearRect(0, 0, w, h);
+			ctx.drawImage(img, 0, 0, w, h);
+			var data = ctx.getImageData(0,0,w,h);
+			for(var j = 0; j < data.data.length; j +=4) {
+				var r = data.data[j+0];
+				var g = data.data[j+1];
+				var b = data.data[j+2];
+				// var a = data.data[j+3];
+
+				// var hue = this.getHue(r/255,g/255,b/255);
+				var hsv = ComUtil.rgb2hsv({r:r/255,g:g/255,b:b/255});
+				var hue = hsv.h;
+				if(hsv.v < 0.1 || hsv.s < 0.1) {
+					hue = -hsv.v;
+				}
+				// arr[i].aaa = hsv;
+				// var hue = r<<16+g<<8+b;
+				arr[i]._hue = hue;
+				// console.info(i, r, g, b, a, ",", hue, arr[i].name);
+				break;
+			}
+		}
+
+		arr.sort((a,b)=>a._hue-b._hue);
+		// console.info(arr);
 	}
 
 	onDownImage(idx) {
@@ -343,6 +511,26 @@ export default class Home extends Vue {
 	}
 
 	onUpImage(evt, it, idx) {
+		// console.info(evt);
+		// copy to clipboard
+		if(evt.button == 2) {
+			var ele: any = this.$refs.copyInput;
+			var val = it.name;
+			if(!this.isCopySuffix) {
+				val = val.replace(/\.[^.]*$/, "");
+			}
+			$(ele).val(val);
+			ele.select();
+			ele.setSelectionRange(0, ele.value.length);
+			document.execCommand("copy");
+		} else if(evt.detail == 2) {
+			// double click
+			if(it.isDir) {
+				this.path = this.path.replace(/[\\/]+$/, "") + "/" + it.name;
+			}
+			return;
+		}
+
 		if(this.downImageIdx != idx) {
 			this.downImageIdx = -1;
 			return;
@@ -368,14 +556,6 @@ export default class Home extends Vue {
 		}
 
 		this.selectItem = it;
-		
-		if(evt.button == 2) {
-			var ele: any = this.$refs.copyInput;
-			$(ele).val(it.name);
-			ele.select();
-			ele.setSelectionRange(0, ele.value.length);
-			document.execCommand("copy");
-		}
 	}
 
 	onDetailImageLoad(evt) {
@@ -548,6 +728,40 @@ export default class Home extends Vue {
 	formatTime(time) {
 		return TimeFormat.format(new Date(time*1000), "yyyy/MM/dd hh:mm:ss");
 		return time;
+	}
+
+	onClickBack() {
+		var path = this.path.replace(/[/]+$/, "");
+		if(path.indexOf("/") < 0) {
+			return;
+		}
+
+		this.path = path.replace(/[/][^/]+$/, "");
+	}
+
+	onClickQuickItem(idx) {
+		var newPath = "";
+		for (var i = 0; i <= idx; ++i) {
+			newPath += this.lstPath[i] + "/";
+		}
+		this.path = newPath;
+	}
+
+	onInputFocus() {
+		this.showQuickBox = false;
+	}
+
+	onInputBlur() {
+		this.showQuickBox = true;
+	}
+
+	onQuickBoxMousewheel(evt) {
+		if(evt.shiftKey) {
+			return;
+		}
+		var ele = this.$refs.quickBox as HTMLDivElement;
+		// var left = 50 * (evt.deltaY>0?1:-1) + ele.scrollLeft;
+		ele.scrollLeft = 50 * (evt.deltaY>0?1:-1) + ele.scrollLeft;
 	}
 
 };

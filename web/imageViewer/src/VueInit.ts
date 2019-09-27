@@ -57,7 +57,7 @@ export default class VueInit {
 			// Vue.use(Vuex as any);
 
 			Lang.ins.switchLang(MainModel.ins.language);
-			this.initLang();
+			// this.initLang();
 
 			MainStore.ins.init();
 			var store = MainStore.ins.store;
@@ -137,32 +137,32 @@ export default class VueInit {
 		} catch (ex) { }
 	}
 
-	initLang() {
-		window["lang"] = Lang.ins;
-		var weekFormat = {
-			get 1() { return Lang.ins.week1; },
-			get 2() { return Lang.ins.week2; },
-			get 3() { return Lang.ins.week3; },
-			get 4() { return Lang.ins.week4; },
-			get 5() { return Lang.ins.week5; },
-			get 6() { return Lang.ins.week6; },
-			get 7() { return Lang.ins.week7; }
-		};
-		TimeFormat.weekFormat = weekFormat;
+	// initLang() {
+	// 	window["lang"] = Lang.ins;
+	// 	var weekFormat = {
+	// 		get 1() { return Lang.ins.week1; },
+	// 		get 2() { return Lang.ins.week2; },
+	// 		get 3() { return Lang.ins.week3; },
+	// 		get 4() { return Lang.ins.week4; },
+	// 		get 5() { return Lang.ins.week5; },
+	// 		get 6() { return Lang.ins.week6; },
+	// 		get 7() { return Lang.ins.week7; }
+	// 	};
+	// 	TimeFormat.weekFormat = weekFormat;
 
-		// 初始化日期控件
-		// try {
-		// 	$.fn.datetimepicker.dates['zh'] = {
-		// 		days: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"],
-		// 		daysShort: ["日", "一", "二", "三", "四", "五", "六", "日"],
-		// 		daysMin: ["日", "一", "二", "三", "四", "五", "六", "日"],
-		// 		months: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
-		// 		//months: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-		// 		monthsShort: ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"],
-		// 		meridiem: ["上午", "下午"],
-		// 		//suffix: ["st", "nd", "rd", "th"], 
-		// 		today: "今天"
-		// 	};
-		// } catch (ex) { }
-	}
+	// 	// 初始化日期控件
+	// 	// try {
+	// 	// 	$.fn.datetimepicker.dates['zh'] = {
+	// 	// 		days: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"],
+	// 	// 		daysShort: ["日", "一", "二", "三", "四", "五", "六", "日"],
+	// 	// 		daysMin: ["日", "一", "二", "三", "四", "五", "六", "日"],
+	// 	// 		months: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+	// 	// 		//months: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+	// 	// 		monthsShort: ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"],
+	// 	// 		meridiem: ["上午", "下午"],
+	// 	// 		//suffix: ["st", "nd", "rd", "th"], 
+	// 	// 		today: "今天"
+	// 	// 	};
+	// 	// } catch (ex) { }
+	// }
 }
