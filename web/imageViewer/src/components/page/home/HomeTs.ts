@@ -26,6 +26,7 @@ export default class Home extends Vue {
 	showQuickBox = true;
 	oldOncontextmenu: any = null;
 	isCopySuffix = true;
+	antiAliasing = true;
 
 	lstData = [];
 	scale = 1;
@@ -72,6 +73,11 @@ export default class Home extends Vue {
 	@Watch("isCopySuffix")
 	onIsCopySuffixChanged() {
 		$.cookie('copy_suffix', this.isCopySuffix ? "1":"0", { expires: 9999, path: '/' });
+	}
+
+	@Watch("antiAliasing")
+	onAntiAliasingChanged() {
+		$.cookie('antiAliasing', this.antiAliasing ? "1":"0", { expires: 9999, path: '/' });
 	}
 
 	@Watch("scale")
@@ -182,6 +188,11 @@ export default class Home extends Vue {
 		var copySuffixTmp = $.cookie('copy_suffix');
 		if(copySuffixTmp!="") {
 			this.isCopySuffix = copySuffixTmp=="1";
+		}
+
+		var antiTmp = $.cookie('antiAliasing');
+		if(antiTmp!="") {
+			this.antiAliasing = antiTmp=="1";
 		}
 
 		var coTmp = $.cookie('back_color');
@@ -334,7 +345,7 @@ export default class Home extends Vue {
 				continue;
 			}
 
-			arr[i].isImg = /(.png|.jpg|.bmp|.svg)$/.test(arr[i].name);
+			arr[i].isImg = /(.ico|.png|.jpg|.bmp|.svg)$/.test(arr[i].name);
 			if(!arr[i].isImg) {
 				continue;
 			}

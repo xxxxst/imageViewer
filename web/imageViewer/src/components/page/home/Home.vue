@@ -41,8 +41,12 @@
 					</select>
 				</div>
 				<div class="right-box">
-					<label for="chkCopySuffix">
-						<input id="chkCopySuffix" type="checkbox" v-model="isCopySuffix"/>
+					<label>
+						<input type="checkbox" v-model="antiAliasing"/>
+						<div class="lbl">抗锯齿</div>
+					</label>
+					<label>
+						<input type="checkbox" v-model="isCopySuffix"/>
 						<div class="lbl">复制后缀</div>
 					</label>
 				</div>
@@ -55,7 +59,7 @@
 				<div class="item" :class="{select:it===selectItem}">
 					<div class="img-box" :style="getItemStyle()">
 					<!-- <div class="img-box"> -->
-						<img :id="'cont_img_'+idx" :src="getIcon(it)" alt="" @load="onImageLoad($event, it)" crossorigin="anonymous" v-noDrag>
+						<img :class="{'anti-aliasing':!antiAliasing}" :id="'cont_img_'+idx" :src="getIcon(it)" alt="" @load="onImageLoad($event, it)" crossorigin="anonymous" v-noDrag>
 					</div>
 					<div class="lbl">{{it.name}}</div>
 				</div>
@@ -78,8 +82,13 @@
 				</div>
 			</div>
 			<div class="img-box" ref="detailImgBox" @mousewheel="onDetailMousewheel($event)" @mousedown="onDownSelect($event)">
-				<img v-if="selectItem" ref="detailImg" :src="getIcon(selectItem)" alt="" @load="onDetailImageLoad($event)">
+				<img :class="{'anti-aliasing':!antiAliasing}" v-if="selectItem" ref="detailImg" :src="getIcon(selectItem)" alt="" @load="onDetailImageLoad($event)">
 			</div>
+		</div>
+	</div>
+	<div class="bottom-box">
+		<div class="right-box">
+			<div class="lbl">右键点击图片复制文件名</div>
 		</div>
 	</div>
 </div>
@@ -96,7 +105,7 @@ export default Home;
 .home {
 	position: absolute; width: 100%; height: 100%; top: 0; left: 0;
 	>.center-cont {
-		position: absolute; top: 0; left: 10px; right: 10px; bottom: 20px;
+		position: absolute; top: 0; left: 10px; right: 10px; bottom: 25px;
 		>.top-box {
 			position: relative; width: 100%; height: 55px; margin-top: 10px; z-index: 10;
 			>.row1 {
@@ -153,12 +162,13 @@ export default Home;
 				>.right-box {
 					position: absolute; top: 0; right: 0; height: 25px; line-height: 25px; @extend %ex-one-line;
 					>label {
-						cursor: pointer;
+						cursor: pointer; margin-left: 8px;
 						>.lbl { display: inline-block; }
 					}
 				}
 			}
 		}
+		.anti-aliasing { image-rendering: pixelated; }
 		>.content {
 			position: absolute; top: 70px; bottom: 0; left: 0; right: 0; border: 1px solid #000; border-radius: 8px; padding: 8px; overflow: hidden; overflow-y: auto; @include scrollbar(6px);
 			>.item-box {
@@ -202,6 +212,13 @@ export default Home;
 		left: 99999px; top: 99999px; opacity: 0;
 		>input { color: transparent; border: 0; background: transparent; }
 		>.back { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #fff; }
+	}
+	>.bottom-box {
+		position: absolute; bottom: 0; width: 100%; height: 25px;
+		>.right-box {
+			position: absolute; display: inline-block; right: 10px; top: 0; height: 100%;
+			>.lbl { font-size: 12px; height: 25px; line-height: 25px; }
+		}
 	}
 }
 </style>
