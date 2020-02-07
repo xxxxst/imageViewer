@@ -164,7 +164,7 @@ export default class Home extends Vue {
 		this.cdn = !!window["__cdn__"];
 
 		if(this.isDebug) {
-			MainModel.ins.serverUrl = "http://localhost:8093/test/server/";
+			MainModel.ins.serverUrl = "http://localhost:9100/test/server/";
 		}
 
 		var scaleTmp = $.cookie('scale');
@@ -178,6 +178,8 @@ export default class Home extends Vue {
 		var pathTmp = $.cookie('search_path');
 		if(pathTmp) {
 			this.path = pathTmp;
+		} else {
+			this.path = "{demo}";
 		}
 
 		var typeTmp = $.cookie('sort_type');
@@ -324,18 +326,30 @@ export default class Home extends Vue {
 	}
 
 	async updatePath() {
+
+		this.lstData = [];
+
 		var url = `${MainModel.ins.serverUrl}directory/list`;
 		var md = {
 			path: this.path,
 			rewrite: "0",
 		}
-		var rst = await axios.post(url, md);
+		
+		var arr = [];
+		if(this.path.indexOf("{demo}") == 0) {
+			arr = [
+				{"name":"arrowLeft.png","isDir":false,"size":336,"modifyTime":1581056324,"children":[]},
+				{"name":"suffix","isDir":true,"size":0,"modifyTime":1581056324,"children":[]}
+			];
+		} else {
+			arr = (await axios.post(url, md)).data;
+		}
 
 		this.downImageIdx = -1;
 		this.selectItem = null;
 		this.imgLoadedCount = 0;
 
-		var arr = rst.data;
+		// var arr = rst.data;
 		for(var i = 0; i < arr.length; ++i) {
 			arr[i].src = "";
 			arr[i].isImg = false;
@@ -352,10 +366,14 @@ export default class Home extends Vue {
 
 			var path = this.path + "/" + arr[i].name;
 			// path = this.encodeBase64(path);
-			arr[i].src = `${MainModel.ins.serverUrl}file/get/0/${path}?v=${Math.random()}`;
+			if(this.path.indexOf("{demo}") == 0) {
+				arr[i].src = `./static/image/${arr[i].name}`;
+			} else {
+				arr[i].src = `${MainModel.ins.serverUrl}file/get/0/${path}?v=${Math.random()}`;
+			}
 		}
 
-		rst.data.sort((a,b)=>{
+		arr.sort((a,b)=>{
 			if(!a.isDir || !b.isDir) {
 				return a.isDir?-1:1;
 			}
@@ -365,7 +383,7 @@ export default class Home extends Vue {
 			return s1<s2?-1:1;
 		});
 
-		this.lstData = rst.data;
+		this.lstData = arr;
 
 		this.onSortTypeChanged();
 
@@ -760,6 +778,8 @@ export default class Home extends Vue {
 
 	onInputFocus() {
 		this.showQuickBox = false;
+		var ele = this.$refs.txtPath as any;
+		ele && ele.select();
 	}
 
 	onInputBlur() {

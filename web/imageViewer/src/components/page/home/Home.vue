@@ -14,7 +14,7 @@
 					<img src="static/image/arrowLeft.png" alt="">
 				</div>
 				<div class="input-box">
-					<input type="text" v-model="path" v-noSpell placeholder="输入路径..." :style="{'color':showQuickBox?'#fff':'#000'}" @focus="showQuickBox=false" @blur="showQuickBox=true">
+					<input type="text" ref="txtPath" v-model="path" v-noSpell placeholder="输入路径..." :style="{'color':showQuickBox?'#fff':'#000'}" @focus="onInputFocus()" @blur="showQuickBox=true">
 					<div class="quick-box" v-show="showQuickBox" ref="quickBox" @mousewheel="onQuickBoxMousewheel($event)">
 						<div class="item" v-for="(it,idx) in lstPath" :key="idx" @click="onClickQuickItem(idx)">{{it}}</div>
 					</div>
