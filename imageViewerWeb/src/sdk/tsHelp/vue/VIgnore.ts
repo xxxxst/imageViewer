@@ -1,6 +1,11 @@
 
-import Vue from "vue";
-import { createDecorator } from "vue-class-component";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) xxxxst. All rights reserved.
+ *  Licensed under the MIT License
+ *--------------------------------------------------------------------------------------------
+*/
+
+import { createDecorator } from './v2c/IVueClassComponent';
 
 //使vue忽略该属性，不会转换为get/set方法
 export function VIgnore(target?: any, key?: any, descriptor?: any): any {
@@ -19,7 +24,7 @@ export function VIgnore(target?: any, key?: any, descriptor?: any): any {
 			});
 		}
 
-		if (targetSub instanceof Vue) {
+		if (targetSub || true) {
 			createDecorator((componentOptions, handler) => {
 				var mixins = componentOptions.mixins || (componentOptions.mixins = []);
 
@@ -36,7 +41,7 @@ export function VIgnore(target?: any, key?: any, descriptor?: any): any {
 		} else {
 			setState(targetSub);
 		}
-	};
+	}
 
 	// @Des
 	if (key != null) {

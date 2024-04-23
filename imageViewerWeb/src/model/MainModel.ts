@@ -1,6 +1,4 @@
 
-import HomeTs from '../components/page/home/HomeTs';
-
 export default class MainModel{
 	static ins = new MainModel();
 	
@@ -10,10 +8,7 @@ export default class MainModel{
 	domName = "";
 	port = "";
 	staticUrl = "";
-	// serverUrl:string = "/server/";
 	serverUrl = "/server/";
-
-	isDebug = false;
 }
 
 export class Size {

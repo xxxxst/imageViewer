@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,  minimum-scale=1.0, user-scalable=0" />
+	<title></title>
+
+	<link rel="shortcut icon" type="image/x-icon" href="data:image/png;base64," />
+    
+	<link rel="stylesheet" href="./static/lib/color-picker/color-picker.min.css">
+	
+	<script type="text/javascript">(typeof(module) === 'object') && (window.module = module, module = undefined)</script>
+
+	<script language="javascript" src="./static/lib/jquery/jquery-2.2.0.min.js"></script>
+	<script language="javascript" src="./static/lib/jquery/jquery.cookie.js"></script>
+	<script language="javascript" src="./static/lib/color-picker/color-picker.min.js"></script>
+	
+	<script type="text/javascript">window.module && (module = window.module)</script>
+</head>
+
+<body>
+	<noscript>
+		<strong>Need JavaScript enabled</strong>
+	</noscript>
+	<script type="text/javascript">
+		<% if(htmlWebpackPlugin.options.debug) { %>
+			__debug__=true;
+		<% } %>
+		<% if(htmlWebpackPlugin.options.cdn) { %>
+			__cdn__=true;
+		<% } %>
+	</script>
+	<div id="app-entry"></div>
+</body>
+
+</html>

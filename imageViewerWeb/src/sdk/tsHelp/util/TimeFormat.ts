@@ -1,43 +1,47 @@
 
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) xxxxst. All rights reserved.
+ *  Licensed under the MIT License
+ *--------------------------------------------------------------------------------------------
+*/
+
 export default class TimeFormat {
-	static weekFormat: any = {
-		1: "Monday",
-		2: "Tuesday",
-		3: "Wednesday",
-		4: "Thursday",
-		5: "Friday",
-		6: "Saturday",
-		7: "Sunday"
-	};
-
-	static format(date: any = null, pattern = "") {
-		if (date == undefined || date == null) {
-			date = new Date();
-		}
-		if (pattern == undefined) {
-			pattern = "yyyy-MM-dd hh:mm:ss";
-		}
-
-		var o = {
-			"M+": date.getMonth() + 1,
-			"d+": date.getDate(),
-			"h+": date.getHours(),
-			"m+": date.getMinutes(),
-			"s+": date.getSeconds(),
-			"q+": Math.floor((date.getMonth() + 3) / 3),
-			"w+": TimeFormat.weekFormat[date.getDay()],
-			"S": date.getMilliseconds()
-		};
-		if (/(y+)/.test(pattern)) {
-			pattern = pattern.replace(RegExp.$1, (date.getFullYear() + "").substr(4 - RegExp.$1.length));
-		}
-
-		for (var k in o) {
-			if (new RegExp("(" + k + ")").test(pattern)) {
-				pattern = pattern.replace(RegExp.$1, (RegExp.$1.length == 1 || k == "w+") ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
+	static format(time: number | Date, strFormat: string) {
+		function fill(num: number | string, tag: string) {
+			var rst = "" + num;
+			if (rst.length > tag.length) {
+				return rst;
 			}
+			rst = tag + rst;
+			return rst.substr(rst.length - tag.length);
 		}
 
-		return pattern;
+		var date = typeof(time) == "number" ? new Date(time) : time;
+		var arrWeek = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+		var arrWeekCn = ["周日", "周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+		var arr: [RegExp, string][] = [
+			[/yyyy/g, fill(date.getFullYear(), "")],
+			[/MM/g, fill(date.getMonth() + 1, "00")],
+			[/M/g, fill(date.getMonth() + 1, "")],
+			// [/DD/g, fill(date.getDate(), "00")],
+			// [/D/g, fill(date.getDate(), "")],
+			[/dd/g, fill(date.getDate(), "00")],
+			[/d/g, fill(date.getDate(), "")],
+			[/hh/g, fill(date.getHours(), "00")],
+			[/h/g, fill(date.getHours(), "")],
+			[/mm/g, fill(date.getMinutes(), "00")],
+			[/m/g, fill(date.getMinutes(), "")],
+			[/ss/g, fill(date.getSeconds(), "00")],
+			[/s/g, fill(date.getSeconds(), "")],
+			[/qqq/g, fill(date.getMilliseconds(), "000")],
+			[/q/g, fill(date.getMilliseconds(), "0")],
+			[/ww/g, fill(arrWeek[date.getDay()], "")],
+			[/wwh/g, fill(arrWeekCn[date.getDay()], "")],
+		];
+		var rst = strFormat;
+		for (var i = 0; i < arr.length; ++i) {
+			rst = rst.replace(arr[i][0], arr[i][1]);
+		}
+		return rst;
 	}
 }

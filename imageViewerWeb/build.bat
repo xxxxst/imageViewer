@@ -1,2 +1,4 @@
+@echo off
 
-npm run build
+call yarn build
+call yarn libBuild

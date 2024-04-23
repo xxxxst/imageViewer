@@ -1,0 +1,22 @@
+diff --git a/node_modules/css-loader/dist/plugins/postcss-url-parser.js b/node_modules/css-loader/dist/plugins/postcss-url-parser.js
+index e7f60ad..96a6840 100644
+--- a/node_modules/css-loader/dist/plugins/postcss-url-parser.js
++++ b/node_modules/css-loader/dist/plugins/postcss-url-parser.js
+@@ -87,8 +87,15 @@ var _default = _postcss.default.plugin(pluginName, options => (css, result) => {
+         return;
+       }
+ 
+-      if (options.filter && !options.filter(url)) {
+-        return;
++      if (options.filter) {
++		var rst = options.filter(url);
++		if(!rst) {
++			return;
++		}
++		if(typeof(rst) == "string") {
++			node.value = rst;
++			return;
++		}
+       }
+ 
+       const splittedUrl = url.split(/(\?)?#/);

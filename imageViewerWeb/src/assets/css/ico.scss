@@ -1,0 +1,8 @@
+
+// @import "./icoAuto.scss";
+
+@mixin ico($name) {
+	background: url("~@img/" + $name) no-repeat 0 0; background-size: 100% 100%;
+}
+
+// .ico-test { @include ico("test.png"); }

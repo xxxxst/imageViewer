@@ -1,9 +1,15 @@
 
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) xxxxst. All rights reserved.
+ *  Licensed under the MIT License
+ *--------------------------------------------------------------------------------------------
+*/
+
 // ini 文件解析
 export default class IniFileCtl {
 
-	static parse(strData:string) {
-		var mapRst = {};
+	static parse(strData: string) {
+		var mapRst: Record<string, string> = {};
 
 		//success
 		var arrData = strData.split("\r\n");

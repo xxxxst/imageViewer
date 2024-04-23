@@ -1,6 +1,103 @@
-import Vue from 'vue';
 
 export default class ComUtil {
+	static dataVersion: string = "1.0.1";
+	static EARTH_RADIUS = 6378137.0;	//地球吧半径
+
+	// array 转 object
+	static mapArray(arr, keyName): any {
+		var rst = {};
+		for (var i = 0; i < arr.length; ++i) {
+			rst[arr[i][keyName]] = arr[i];
+		}
+		return rst;
+	}
+
+	// get object first key
+	static objFirstKey(obj: object) {
+		for (var key in obj) {
+			return key;
+		}
+		return null;
+	}
+
+	// base64 image => blob
+	static b64ImgToBlob(b64ImgData) {
+		/^data:(.*?);base64,/.test(b64ImgData);
+		var contentType = RegExp.$1;
+		var b64Data = b64ImgData.replace(/data:.*?;base64,/, "");
+		return ComUtil.b64toBlob(b64Data, contentType, 512);
+	}
+
+	// base64 => blob
+	static b64toBlob(b64Data, contentType, sliceSize = 512) {
+		contentType = contentType || '';
+		sliceSize = sliceSize || 512;
+
+		var byteCharacters = atob(b64Data);
+		var byteArrays = [];
+
+		for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+			var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+			var byteNumbers = new Array(slice.length);
+			for (var i = 0; i < slice.length; i++) {
+				byteNumbers[i] = slice.charCodeAt(i);
+			}
+
+			var byteArray = new Uint8Array(byteNumbers);
+
+			byteArrays.push(byteArray);
+		}
+
+		var blob = new Blob(byteArrays, { type: contentType });
+		return blob;
+	}
+
+	// 面积计算
+	static calcArea(pos1, pos2, pos3) {
+		//三角形三条边的长度
+		var lineP1P2: number = ComUtil.calcRange(pos1, pos2);
+		var lineP2P3: number = ComUtil.calcRange(pos2, pos3);
+		var lineP1P3: number = ComUtil.calcRange(pos1, pos3);
+
+		//半周长
+		var semic: number = (lineP1P2 + lineP2P3 + lineP1P3) / 2;
+
+		//海伦公式求三角形面积
+		var s: number = Math.sqrt(semic * (semic - lineP1P2) * (semic - lineP2P3) * (semic - lineP1P3));
+		return s;
+	}
+
+	// 距离计算
+	static calcRange(pos1, pos2) {
+		// var dx = (pos2.pntx - pos1.pntx);
+		// var dy = (pos2.pnty - pos1.pnty);
+		var dz = (pos2.height - pos1.height);
+		// var len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+		var gpsLen = ComUtil.getGreatCircleDistance(pos1.lon, pos1.lat, pos2.lon, pos2.lat);
+		var len = Math.sqrt(gpsLen * gpsLen + dz * dz);
+		return len;
+	}
+
+	//两坐标（经纬度）之间距离计算
+	// 返回 米
+	static getGreatCircleDistance(startLon, startLat, endLon, endLat) {
+		var EARTH_RADIUS = 6378137.0;
+
+		var radLat1 = ComUtil.getRad(startLat);
+		var radLat2 = ComUtil.getRad(endLat);
+		var dy = radLat1 - radLat2; // a
+		var dx = ComUtil.getRad(startLon) - ComUtil.getRad(endLon); // b
+		var s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(dy / 2), 2) + Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(dx / 2), 2)));
+		s = s * EARTH_RADIUS;
+		s = Math.round(s * 10000) / 10000.0;
+		return s;
+	}
+
+	// 度转弧度
+	static getRad(d) {
+		return d * Math.PI / 180.0;
+	}
 	// 合并对象
 	// 相同属性，data将覆盖template
 	static mergeObj(template: object, data: object)
@@ -68,6 +165,62 @@ export default class ComUtil {
 		}
 		return rst;
 	}
+	
+	static clone(source) {
+		if (typeof (source) != "object") {
+			return source;
+		}
+
+		var rst = {};
+		if (this.isArray(source)) {
+			rst = [];
+		}
+		Object.setPrototypeOf(rst, Object.getPrototypeOf(source));
+		
+		for (var key in source) {
+			rst[key] = this.clone(source[key]);
+		}
+		return rst;
+	}
+
+	// 拷贝对象
+	static extend(source, isDeep = false) {
+		if (typeof (source) != "object") {
+			return source;
+		}
+
+		var rst = {};
+		if (this.isArray(source)) {
+			rst = [];
+		}
+
+		if (isDeep) {
+			for (var key in source) {
+				// try{
+				// 	var des = Object.getOwnPropertyDescriptor(source, key);
+				// 	if("get" in des){
+				// 		Object.defineProperty(rst, key, des);
+				// 		continue;
+				// 	}
+				// }catch(ex){ }
+
+				rst[key] = this.extend(source[key], isDeep);
+			}
+		} else {
+			for (var key in source) {
+				// try{
+				// 	var des = Object.getOwnPropertyDescriptor(source, key);
+				// 	if("get" in des){
+				// 		Object.defineProperty(rst, key, des);
+				// 		continue;
+				// 	}
+				// }catch(ex){ }
+
+				rst[key] = source[key];
+			}
+		}
+		return rst;
+	}
 
 	// 混合
 	static mix(source) {
@@ -104,8 +257,17 @@ export default class ComUtil {
 		}
 	}
 
-	static rgb2hex(r, g, b) {
-		return r<<16+g<<8+b;
+	// 是否为IE浏览器
+	static isIE() {
+		if (!!window["ActiveXObject"] || "ActiveXObject" in window) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	static rgb2hex(r: number, g: number, b: number) {
+		return r << 16 + g << 8 + b;
 	}
 
 	// static getRgba(str) {
@@ -222,18 +384,21 @@ export default class ComUtil {
 			hsv.h = NaN;
 			return hsv;
 		}
-		if (rgb.r >= max)
+		if (rgb.r >= max) {
 			hsv.h = (rgb.g - rgb.b) / delta;
-		else
-			if (rgb.g >= max)
+		} else {
+			if (rgb.g >= max) {
 				hsv.h = 2.0 + (rgb.b - rgb.r) / delta;
-			else
+			} else {
 				hsv.h = 4.0 + (rgb.r - rgb.g) / delta;
+			}
+		}
 
 		hsv.h *= 60.0;
 
-		if (hsv.h < 0.0)
+		if (hsv.h < 0.0) {
 			hsv.h += 360.0;
+		}
 
 		return hsv;
 	}
@@ -274,11 +439,27 @@ export default class ComUtil {
 	// 	return [h, s, l];
 	// }
 
-	static async nextTick() {
-		return new Promise(rsv=>{
-			Vue.nextTick(()=>{
-				rsv();
-			});
-		});
+	// 获取元素绝对位置
+	static getAbsolutePos(ele) {
+		var x = 0;
+		var y = 0;
+		if (ele.getBoundingClientRect) {
+			const rect = ele.getBoundingClientRect();
+			x = rect.left + window.scrollX;
+			y = rect.top + window.scrollY;
+			return { x, y};
+		}
+
+		var el = ele;
+		while (el && !isNaN(el.offsetLeft) && !isNaN(el.offsetTop)) {
+			x += el.offsetLeft - el.scrollLeft;
+			y += el.offsetTop - el.scrollTop;
+			el = el.offsetParent;
+			if (el == document.body) {
+				break;
+			}
+		}
+		return { x, y };
 	}
+
 }

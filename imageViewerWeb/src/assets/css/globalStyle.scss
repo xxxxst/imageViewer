@@ -1,0 +1,16 @@
+
+@import "./comStyle.scss";
+
+@import "./ico.scss";
+// @import "./tex.scss";
+
+@keyframes aniSkillPrepare {
+	0% { opacity: 0.6; }
+	50% { opacity: 0.3; }
+	100% { opacity: 0.6; }
+}
+
+@keyframes aniSkillCd {
+	0% { background-position: 0px 0%; }
+	100% { background-position: 0px 100%; }
+}

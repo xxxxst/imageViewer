@@ -1,0 +1,39 @@
+
+@function rem($px) {
+	@return $px / 100px * 1rem;
+}
+
+// extend
+// 禁止选择
+%ex-no-select { -webkit-user-select:none; -ms-user-select: none; user-select:none; }
+// 强制单行
+%ex-one-line { white-space:nowrap; word-break:break-all; }
+
+// 滚动条
+@mixin scrollbar($size) {
+	&::-webkit-scrollbar { width: $size; height: $size; background-color: transparent; }
+	/*滑块*/
+	&::-webkit-scrollbar-thumb { background-color: #6d6d6d; border-radius: rem($size / 2); }
+	/*滚动条的轨道*/
+	&::-webkit-scrollbar-track { background-color: rgba(109, 109, 109, 0.2); }
+	/*滚动条的上下两端的按钮*/
+	&::-webkit-scrollbar-button { width: 0; height: 0; background-color: #2921ce; }
+}
+
+// test
+// @keyframes testAni {
+// 	0% { opacity: 0.2; }
+// 	50% { opacity: 0.5; }
+// 	100% { opacity: 0.2; }
+// }
+
+.test-mask {
+	pointer-events: none; position: fixed; display: inline-block; left: 0; top: -9px; width: 1919px; height: 904px; border-bottom: 1px solid #f00; z-index: 9999;
+	// background: url("~@img/preview/preview 1.png") no-repeat 0 0; background-size: 100% 100%;
+	opacity: 0;
+	// animation: testAni 2s infinite linear;
+}
+
+@mixin miniFontSize($size, $hAlign: left, $vAlign: center) {
+	font-size: 12px; transform-origin: $hAlign $vAlign; transform: scale($size / 12px);
+}

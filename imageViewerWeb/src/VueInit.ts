@@ -1,87 +1,101 @@
 
-import Vue from 'vue'
-// import { Store } from 'vuex'
-import Vuex from 'vuex'
-// import VueResource from 'vue-resource'
-import VueRouter from 'vue-router'
-import axios from 'axios'
-import App from 'src/App.vue'
-// import Login from 'src/components/login/Login.vue'
-import Lang from 'src/lang/Lang'
-// import MainCtl from 'src/control/MainCtl'
-import MainStore from 'src/model/MainStore'
-import MainModel from 'src/model/MainModel'
-import VueHub from './sdk/tsHelp/vue/VueHub';
-import VueVEvent from './sdk/tsHelp/vue/VueVEvent';
-// import IniFileCtl from './sdk/tsHelp/util/IniFileCtl';
-import TimeFormat from './sdk/tsHelp/util/TimeFormat';
-import IniFileCtl from 'src/sdk/tsHelp/util/IniFileCtl';
-// import VueUICtl from './sdk/tsHelp/vue/uiCtl/VueUICtl';
+import { Vue, directive, mount } from '@/sdk/tsHelp/vue/v2c/IVue';
+import { Comp, Inject, Model, Prop, Provide, Watch, DEEP, IMMEDIATE, State } from '@/sdk/tsHelp/vue/v2c/IVueDecorator';
+import Vuex from 'vuex';
+import VueRouter from 'vue-router';
+import axios from 'axios';
 
+import ProjApp from '@/ProjApp.vue';
+import MainModel from '@/model/MainModel';
+import VueVEvent from '@/sdk/tsHelp/vue/VueVEvent';
+import VueVHover from '@/sdk/tsHelp/vue/VueVHover';
+import VueVStyle from '@/sdk/tsHelp/vue/VueVStyle';
+import VueVDrop from '@/sdk/tsHelp/vue/VueVDrop';
+import IniFileCtl from '@/sdk/tsHelp/util/IniFileCtl';
+import VueApp from '@/VueApp';
+import IcoButton from '@/components/util/icoButton/IcoButton.vue';
+
+import "@/control/AntDesignImport";
+
+// Comp.prototype.propToModel = true;
+
+window["__debug__"] && (window["Vue"] = Vue as any);
 export default class VueInit {
 	static ins: VueInit = null;
-	vue: Vue = null;
 
 	constructor() {
 		VueInit.ins = this;
+	}
+
+	async init() {
+		// await this.initLib();
+		// init config
+		// await VueInit.getConfigFile();
 
 		if (MainModel.ins.baseUrl == "") {
 			var url = window.location.href;
 			url = url.replace(/#.*/, "");
 			url = url.replace(/\?.*/, "");
-			url = url.replace(/[^\/]*\.html.*/, "");
-			url = url.replace(/([^\/])$/, "$1/");
+			url = url.replace(/[^/]*\.html.*/, "");
+			url = url.replace(/([^/])$/, "$1/");
 			MainModel.ins.baseUrl = url;
 			MainModel.ins.domName = url.match(/(?:[a-z]*:\/\/)([^:]*)(?:.*)/)[1] || "";
-			MainModel.ins.port = url.match(/(?:[a-z]*:\/\/)(?:[^:]*:?)([^\/]*)(?:.*)/)[1] || "";
-			// console.info(url.match(/(?:[a-z]*:\/\/)(?:[^:]*:?)([^\/]*)(?:.*)/));
+			MainModel.ins.port = url.match(/(?:[a-z]*:\/\/)(?:[^:]*:?)([^/]*)(?:.*)/)[1] || "";
 		}
 
 		axios.defaults.withCredentials = true;
-		// axios.defaults.changeOrigin = true;
 
-		// Vue.config.warnHandler = ()=>{};
-		Vue.config.productionTip = false;
-		Vue.use(Vuex as any);
-		// Vue.use(VueResource as any);
-		Vue.use(VueRouter as any);
-		Vue.use(VueHub as any);
-		Vue.use(VueVEvent as any);
+		VueApp.app.use(Vuex as any);
+		VueApp.app.use(VueRouter as any);
+		VueApp.app.use(VueVEvent as any);
+		VueApp.app.use(VueVHover as any);
+		VueApp.app.use(VueVStyle as any);
+		VueApp.app.use(VueVDrop as any);
+		VueApp.app.component("ico-button", IcoButton);
 	}
 
-	async run(router: any) {
-		await this.getConfigFile();
-		
+	async run(router: any, store: any) {
 		try {
-			window["lang"] = Lang.ins;
-			// Vue.use(Vuex as any);
-
-			Lang.ins.switchLang(MainModel.ins.language);
-			// this.initLang();
-
-			MainStore.ins.init();
-			var store = MainStore.ins.store;
-
-			//是否显示
-			Vue.directive('visibility', {
-				inserted: function (el, data) {
-					el.style.visibility = data.value ? 'visible' : 'hidden';
-				},
-				update: function (el, data) {
-					el.style.visibility = data.value ? 'visible' : 'hidden';
-				}
-			});
+			// window["lang"] = Lang.ins;
+			// Lang.ins.switchLang(MainModel.ins.language);
 
 			//禁止拖拽
-			Vue.directive('noDrag', {
-				inserted: function (el) {
+			directive(VueApp.app, 'noDrag', {
+				mounted(el) {
 					el.ondragstart = () => false;
 				}
 			});
 
+			// 禁止选择
+			directive(VueApp.app, 'noSelect', {
+				mounted(el: any, data, tag) {
+					// console.info(data, tag);
+					if ("value" in data && !data.value) {
+						el.unselectable = "";
+						el.onselectstart = null;
+						return;
+					}
+					el.unselectable = "on";
+					el.onselectstart = function() { return false; };
+				},
+				updated(el: any, data, tag) {
+					if ("value" in data && !data.value) {
+						el.unselectable = "";
+						el.onselectstart = null;
+						return;
+					}
+					el.unselectable = "on";
+					el.onselectstart = function() { return false; };
+				},
+				unmounted(el: any, data: any, tag: any) {
+					el.unselectable = "";
+					el.onselectstart = null;
+				}
+			});
+
 			//禁止语法检查
-			Vue.directive('noSpell', {
-				inserted: function (el) {
+			directive(VueApp.app, 'noSpell', {
+				mounted(el) {
 					el.setAttribute("autocomplete", "off");
 					el.setAttribute("autocorrect", "off");
 					el.setAttribute("autocapitalize", "off");
@@ -89,80 +103,36 @@ export default class VueInit {
 				}
 			});
 
-			//left
-			Vue.directive('left', {
-				inserted: function (el, data) {
-					el.style.left = data.value + 'px';
-				},
-				update: function (el, data) {
-					el.style.left = data.value + 'px';
-				}
-			});
+			VueApp.rootComp = ProjApp;
+			mount(VueApp.app, {router, store});
+			// new Vue({
+			// 	router,
+			// 	store,
+			// 	render: (h) => h(App),
+			// }).$mount('#app-entry');
 
-			//top
-			Vue.directive('top', {
-				inserted: function (el, data) {
-					el.style.top = data.value + 'px';
-				},
-				update: function (el, data) {
-					el.style.top = data.value + 'px';
-				}
-			});
+			// this.vueApp.component("App", App);
+			// VueApp.rootComp = App;
+			// VueApp.app.use(store).use(router).mount('#app-entry');
 
-			this.vue = new Vue({
-				store,
-				router,
-				el: '#app',
-				components: { App },
-				template: '<App/>'
-			});
-			
 		} catch (ex) {
 			console.info("init error", ex);
 		}
 	}
 
-	async getConfigFile() {
+	static async getConfigFile() {
 		var cfgFileUrl = `${MainModel.ins.baseUrl}static/data/config.ini`;
 		var rst = await axios.get(cfgFileUrl);
-
 		try {
 			var cfg = IniFileCtl.parse(rst.data);
 			for (var key in cfg) {
 				if (!(key in MainModel.ins)) {
 					continue;
 				}
+				MainModel.ins[key] = cfg[key];
 			}
-			MainModel.ins[key] = cfg[key];
-		} catch (ex) { }
+		} catch (ex) {
+
+		}
 	}
-
-	// initLang() {
-	// 	window["lang"] = Lang.ins;
-	// 	var weekFormat = {
-	// 		get 1() { return Lang.ins.week1; },
-	// 		get 2() { return Lang.ins.week2; },
-	// 		get 3() { return Lang.ins.week3; },
-	// 		get 4() { return Lang.ins.week4; },
-	// 		get 5() { return Lang.ins.week5; },
-	// 		get 6() { return Lang.ins.week6; },
-	// 		get 7() { return Lang.ins.week7; }
-	// 	};
-	// 	TimeFormat.weekFormat = weekFormat;
-
-	// 	// 初始化日期控件
-	// 	// try {
-	// 	// 	$.fn.datetimepicker.dates['zh'] = {
-	// 	// 		days: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"],
-	// 	// 		daysShort: ["日", "一", "二", "三", "四", "五", "六", "日"],
-	// 	// 		daysMin: ["日", "一", "二", "三", "四", "五", "六", "日"],
-	// 	// 		months: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
-	// 	// 		//months: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-	// 	// 		monthsShort: ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"],
-	// 	// 		meridiem: ["上午", "下午"],
-	// 	// 		//suffix: ["st", "nd", "rd", "th"], 
-	// 	// 		today: "今天"
-	// 	// 	};
-	// 	// } catch (ex) { }
-	// }
 }
