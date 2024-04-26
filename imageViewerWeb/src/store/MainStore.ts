@@ -2,7 +2,7 @@
 import { createStore, Store } from '@/sdk/tsHelp/vue/v2c/IVuex';
 import { reactive } from '@/sdk/tsHelp/vue/v2c/IVue';
 
-import Lang from '@/lang/Lang'
+import Lang from '@/model/Lang'
 
 class StateVue {
 	//语言
@@ -14,6 +14,9 @@ class StateVue {
 
 	isDebug = false;
 	cdn = true;
+	
+	enableWinServer = false;
+	supportDb = false;
 }
 
 export const state = reactive(new StateVue());

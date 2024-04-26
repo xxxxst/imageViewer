@@ -8,7 +8,7 @@ export default class MainModel{
 	domName = "";
 	port = "";
 	staticUrl = "";
-	serverUrl = "/server/";
+	serverUrl = "server/";
 }
 
 export class Size {

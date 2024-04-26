@@ -4,6 +4,8 @@ import { Vue } from '@/sdk/tsHelp/vue/v2c/IVue';
 import { Comp, Inject, Model, Prop, Provide, Watch, DEEP, IMMEDIATE, State } from '@/sdk/tsHelp/vue/v2c/IVueDecorator';
 import axios from 'axios';
 
+import { WinServerHelp } from '@/server/WinServer';
+import '@/server/ElectronWinServer';
 import MainModel, { Size } from '@/model/MainModel';
 import MainCtl from '@/control/MainCtl';
 import ComUtil from '@/util/ComUtil';
@@ -17,6 +19,7 @@ declare var CP: any;
 export default class Home extends Vue {
 	@State() winSize: Size;
 	@State() isDebug: boolean;
+	@State() enableWinServer: boolean;
 	@State() cdn: boolean;
 
 	path = "";
@@ -53,7 +56,7 @@ export default class Home extends Vue {
 	lstSortType = [
 		{ key: "default", desc: "默认" },
 		{ key: "hue", desc: "色相" },
-		{ key: "modifyTime", desc: "修改日期" },
+		{ key: "mtimeMs", desc: "修改日期" },
 		// { key:"complex", desc:"复杂度"},
 	];
 	sortType = "default";
@@ -70,21 +73,28 @@ export default class Home extends Vue {
 
 	@Watch()
 	isCopySuffixChanged() {
-		$.cookie('copy_suffix', this.isCopySuffix ? "1" : "0", { expires: 9999, path: '/' });
+		var dataCtl = MainCtl.ins.dataCtl;
+		dataCtl.setItem("copy_suffix", this.isCopySuffix ? "1" : "0");
+		// $.cookie('copy_suffix', this.isCopySuffix ? "1" : "0", { expires: 9999, path: '/' });
 	}
 
 	@Watch()
 	antiAliasingChanged() {
-		$.cookie('antiAliasing', this.antiAliasing ? "1" : "0", { expires: 9999, path: '/' });
+		var dataCtl = MainCtl.ins.dataCtl;
+		dataCtl.setItem("antiAliasing", this.antiAliasing ? "1" : "0");
+		// $.cookie('antiAliasing', this.antiAliasing ? "1" : "0", { expires: 9999, path: '/' });
 	}
 
 	@Watch()
 	scaleChanged() {
-		$.cookie('scale', this.scale.toString(), { expires: 9999, path: '/' });
+		var dataCtl = MainCtl.ins.dataCtl;
+		dataCtl.setItem("scale", this.scale.toString());
+		// $.cookie('scale', this.scale.toString(), { expires: 9999, path: '/' });
 	}
 
 	@Watch()
 	pathChanged() {
+		var dataCtl = MainCtl.ins.dataCtl;
 		var newpath = this.path.replace(/[ ]*[\\/]+[ ]*/g, "/");
 		if (newpath != this.path) {
 			this.path = newpath;
@@ -95,7 +105,8 @@ export default class Home extends Vue {
 		this.lstPath = tmp.split("/");
 
 		if (this.path) {
-			$.cookie('search_path', this.path, { expires: 9999, path: '/' });
+			dataCtl.setItem("search_path", this.path);
+			// $.cookie('search_path', this.path, { expires: 9999, path: '/' });
 		}
 		this.updatePath();
 	}
@@ -103,44 +114,65 @@ export default class Home extends Vue {
 	saveTimeoutId = -1;
 	@Watch()
 	colorRgbChanged() {
+		var dataCtl = MainCtl.ins.dataCtl;
 		if (this.saveTimeoutId >= 0) {
 			return;
 		}
 		this.saveTimeoutId = setTimeout(() => {
 			this.saveTimeoutId = -1;
 			var co = (this.objColor.r << 16) + (this.objColor.g << 8) + (this.objColor.b);
-			$.cookie('back_color', co.toString(), { expires: 9999, path: '/' });
+			dataCtl.setItem("back_color", co.toString());
+			// $.cookie('back_color', co.toString(), { expires: 9999, path: '/' });
 		}, 1000);
+	}
+
+	sortDefault(a, b) {
+		if (a.type != b.type) {
+			return (a.type == "folder") ? -1 : 1;
+		}
+		var s1 = a.name.toLocaleLowerCase();
+		var s2 = b.name.toLocaleLowerCase();
+		if (s1 == s2) { return 0; }
+		return s1 < s2 ? -1 : 1;
+	}
+
+	sortHue(a, b) {
+		if (a._hue != b._hue) {
+			return (a._hue - b._hue);
+		}
+		return this.sortDefault(a, b);
+	}
+
+	sortMtime(a, b) {
+		if (a.mtimeMs != b.mtimeMs) {
+			return (a.mtimeMs - b.mtimeMs);
+		}
+		return this.sortDefault(a, b);
 	}
 
 	@Watch()
 	sortTypeChanged() {
-		$.cookie('sort_type', this.sortType, { expires: 9999, path: '/' });
+		var dataCtl = MainCtl.ins.dataCtl;
+		dataCtl.setItem("sort_type", this.sortType);
+		// $.cookie('sort_type', this.sortType, { expires: 9999, path: '/' });
 
 		var arr = this.lstData;
 		switch (this.sortType) {
-			case "default": {
-				arr.sort((a, b) => {
-					if (a.isDir ^ b.isDir) {
-						return a.isDir ? -1 : 1;
-					}
-					var s1 = a.name.toLocaleLowerCase();
-					var s2 = b.name.toLocaleLowerCase();
-					if (s1 == s2) { return 0; }
-					return s1 < s2 ? -1 : 1;
-				});
-				break;
-			}
 			case "hue": {
 				if (arr.length > 0 && ("_hue" in arr[0])) {
-					arr.sort((a, b) => a._hue - b._hue);
+					arr.sort(this.sortHue);
 				} else if (this.imgLoadedCount == arr.length) {
 					this.onAllImageLoaded();
 				}
 				break;
 			}
-			case "modifyTime": {
-				arr.sort((a, b) => a.modifyTime - b.modifyTime);
+			case "mtimeMs": {
+				arr.sort(this.sortMtime);
+				break;
+			}
+			case "default":
+			default: {
+				arr.sort(this.sortDefault);
 				break;
 			}
 			// case "complex": {
@@ -149,65 +181,14 @@ export default class Home extends Vue {
 			// 	} else if(this.imgLoadedCount == arr.length) {
 			// 		this.onAllImageLoaded();
 			// 	}
-			// 	// arr.sort((a,b)=>a.modifyTime-b.modifyTime);
+			// 	// arr.sort((a,b)=>a.mtimeMs-b.mtimeMs);
 			// 	break;
 			// }
 		}
 	}
 
 	created() {
-		EnvMd.init();
-
-		this.isDebug = !!window["__debug__"];
-		this.cdn = !!window["__cdn__"];
-
-		if (this.isDebug) {
-			MainModel.ins.serverUrl = "http://localhost:9100/test/server/";
-		}
-
-		var scaleTmp = $.cookie('scale');
-		if (scaleTmp) {
-			var val = parseInt(scaleTmp);
-			if (isNaN(val)) { val = 1; }
-			if (val < 0) { val = 1; }
-			this.scale = val;
-		}
-
-		var pathTmp = $.cookie('search_path');
-		if (pathTmp) {
-			this.path = pathTmp;
-		} else {
-			this.path = "{demo}";
-		}
-
-		var typeTmp = $.cookie('sort_type');
-		if (typeTmp) {
-			this.sortType = typeTmp;
-		}
-
-		var copySuffixTmp = $.cookie('copy_suffix');
-		if (copySuffixTmp != "") {
-			this.isCopySuffix = copySuffixTmp == "1";
-		}
-
-		var antiTmp = $.cookie('antiAliasing');
-		if (antiTmp != "") {
-			this.antiAliasing = antiTmp == "1";
-		}
-
-		var coTmp = $.cookie('back_color');
-		if (coTmp) {
-			var co = parseInt(coTmp);
-			if (!isNaN(co)) {
-				var r = (co & 0xff0000) >> 16;
-				var g = (co & 0x00ff00) >> 8;
-				var b = (co & 0x0000ff);
-				this.objColor.r = r;
-				this.objColor.g = g;
-				this.objColor.b = b;
-			}
-		}
-
+		this.init();
 	}
 
 	mounted() {
@@ -230,6 +211,71 @@ export default class Home extends Vue {
 
 		var ele = this.$refs.content as any;
 		ele && ele.removeEventListener("mousewheel", this.anoOnMousewheelContent);
+	}
+
+	async init() {
+		EnvMd.init();
+
+		this.isDebug = !!window["__debug__"];
+		this.cdn = !!window["__cdn__"];
+
+		this.enableWinServer = WinServerHelp.enableWinServer();
+
+		await MainCtl.ins.init();
+		var dataCtl = MainCtl.ins.dataCtl;
+
+		// if (this.isDebug) {
+		// 	MainModel.ins.serverUrl = "http://localhost:9100/test/server/";
+		// }
+
+		var scaleTmp = await dataCtl.getItem("scale") || "";
+		// var scaleTmp = $.cookie('scale');
+		if (scaleTmp) {
+			var val = parseInt(scaleTmp);
+			if (isNaN(val)) { val = 1; }
+			if (val < 0) { val = 1; }
+			this.scale = val;
+		}
+
+		var pathTmp = await dataCtl.getItem("search_path") || "";
+		// var pathTmp = $.cookie('search_path');
+		if (pathTmp) {
+			this.path = pathTmp;
+		} else {
+			this.path = "{demo}";
+		}
+
+		var typeTmp = await dataCtl.getItem("sort_type") || "";
+		// var typeTmp = $.cookie('sort_type');
+		if (typeTmp) {
+			this.sortType = typeTmp;
+		}
+
+		var copySuffixTmp = await dataCtl.getItem("copy_suffix") || "";
+		// var copySuffixTmp = $.cookie('copy_suffix');
+		if (copySuffixTmp != "") {
+			this.isCopySuffix = copySuffixTmp == "1";
+		}
+
+		var antiTmp = await dataCtl.getItem("antiAliasing") || "";
+		// var antiTmp = $.cookie('antiAliasing');
+		if (antiTmp != "") {
+			this.antiAliasing = antiTmp == "1";
+		}
+
+		var coTmp = await dataCtl.getItem("back_color") || "";
+		// var coTmp = $.cookie('back_color');
+		if (coTmp) {
+			var co = parseInt(coTmp);
+			if (!isNaN(co)) {
+				var r = (co & 0xff0000) >> 16;
+				var g = (co & 0x00ff00) >> 8;
+				var b = (co & 0x0000ff);
+				this.objColor.r = r;
+				this.objColor.g = g;
+				this.objColor.b = b;
+			}
+		}
 	}
 
 	anoOnMouseup = (a) => this.onMouseup(a);
@@ -307,7 +353,7 @@ export default class Home extends Vue {
 		}
 
 		var root = "static/image/suffix/";
-		if (it.isDir) {
+		if (it.type == "folder") {
 			return root + "folder.png";
 		}
 
@@ -323,24 +369,57 @@ export default class Home extends Vue {
 		return root + "unknown.png";
 	}
 
+	getFileUrl(path: string) {
+		var mapType = {
+			".ico": "image/vnd.microsoft.icon",
+			".jpg": "image/jpeg",
+			".tif": "image/tiff",
+			".svg": "image/svg+xml",
+		};
+		var suffix = path.replace(/(?:.*(\.))|(?:.*)/, "$1").toLowerCase();
+		var type = "";
+		if (suffix in mapType) {
+			type = mapType[suffix];
+		} else {
+			suffix = suffix.replace(/[.]+/, "");
+			suffix && (type = "image/" + suffix);
+		}
+		var buf = WinServerHelp.getFileData(path);
+		var blob = new Blob([buf], { type: type });
+		return URL.createObjectURL(blob);
+	}
+
 	async updatePath() {
 
 		this.lstData = [];
 
-		var url = `${MainModel.ins.serverUrl}directory/list`;
-		var md = {
-			path: this.path,
-			rewrite: "0",
+		// var url = `${MainModel.ins.serverUrl}directory/list`;
+		// var md = {
+		// 	path: this.path,
+		// 	rewrite: "0",
+		// }
+
+		if (this.enableWinServer) {
+			for (var i = 0; i < this.lstData.length; ++i) {
+				var it = this.lstData[i];
+				URL.revokeObjectURL(it.src);
+				it.src = "";
+			}
 		}
 
 		var arr = [];
 		if (this.path.indexOf("{demo}") == 0) {
 			arr = [
-				{ "name": "arrowLeft.png", "isDir": false, "size": 336, "modifyTime": 1581056324, "children": [] },
-				{ "name": "suffix", "isDir": true, "size": 0, "modifyTime": 1581056324, "children": [] }
+				{ "name": "arrowLeft.png", "type": "file", "size": 336, "mtimeMs": 1581056324, "ctimeMs": 1581056324 },
+				{ "name": "suffix", "type": "folder", "size": 0, "mtimeMs": 1581056324, "ctimeMs": 1581056324 }
 			];
 		} else {
-			arr = (await axios.post(url, md)).data;
+			// arr = (await axios.post(url, md)).data;
+			if (this.enableWinServer) {
+				arr = WinServerHelp.getFileList(this.path);
+			} else {
+				arr = await MainCtl.ins.httpCtl.getFileList(this.path);
+			}
 		}
 
 		this.downImageIdx = -1;
@@ -353,11 +432,11 @@ export default class Home extends Vue {
 			arr[i].isImg = false;
 			arr[i].w = 0;
 			arr[i].h = 0;
-			if (arr[i].isDir) {
+			if (arr[i].type == "folder") {
 				continue;
 			}
 
-			arr[i].isImg = /(.ico|.png|.jpg|.bmp|.svg)$/.test(arr[i].name);
+			arr[i].isImg = /(.ico|.png|.jpg|.jpeg|.bmp|.svg|.tif|.tiff|.gif)$/.test(arr[i].name);
 			if (!arr[i].isImg) {
 				continue;
 			}
@@ -367,19 +446,17 @@ export default class Home extends Vue {
 			if (this.path.indexOf("{demo}") == 0) {
 				arr[i].src = `./static/image/${arr[i].name}`;
 			} else {
-				arr[i].src = `${MainModel.ins.serverUrl}file/get/0/${path}?v=${Math.random()}`;
+				if (this.enableWinServer) {
+					arr[i].src = this.getFileUrl(path);
+				} else {
+					// arr[i].src = `${MainModel.ins.serverUrl}file/get/0/${path}?v=${Math.random()}`;
+					arr[i].src = `${MainModel.ins.serverUrl}fs/readFile/${path}?v=${Math.random()}`;
+					// arr[i].src = `http://localhost:9102/test/server/file/get/0/${path}?v=${Math.random()}`;
+				}
 			}
 		}
 
-		arr.sort((a, b) => {
-			if (!a.isDir || !b.isDir) {
-				return a.isDir ? -1 : 1;
-			}
-			var s1 = a.name.toLocaleLowerCase();
-			var s2 = b.name.toLocaleLowerCase();
-			if (s1 == s2) { return 0; }
-			return s1 < s2 ? -1 : 1;
-		});
+		arr.sort(this.sortDefault);
 
 		this.lstData = arr;
 
@@ -488,9 +565,16 @@ export default class Home extends Vue {
 		if (this.sortType != "hue") {
 			return;
 		}
+		var w = 2;
+		var h = 2;
 
 		// console.info("aaa:", this.lstData);
-		var ele = this.$refs.cvsImg as HTMLCanvasElement;
+		// var ele = this.$refs.cvsImg as HTMLCanvasElement;
+		var ele = document.createElement("canvas");
+		ele.width = w;
+		ele.height = h;
+		ele.style.width = "1px";
+		ele.style.height = "1px";
 		var ctx = ele.getContext("2d");
 
 		// var arr = this.lstData;
@@ -499,37 +583,74 @@ export default class Home extends Vue {
 				arr[i]._hue = -99;
 				continue;
 			}
-			var w = 1;
-			var h = 1;
 
-			var img = $('#cont_img_' + i)[0];
+			var img = $('#cont_img_' + i)[0] as HTMLImageElement;
 			if (!img) {
 				continue;
 			}
-			ctx.clearRect(0, 0, w, h);
-			ctx.drawImage(img, 0, 0, w, h);
-			var data = ctx.getImageData(0, 0, w, h);
-			for (var j = 0; j < data.data.length; j += 4) {
-				var r = data.data[j + 0];
-				var g = data.data[j + 1];
-				var b = data.data[j + 2];
-				// var a = data.data[j+3];
 
-				// var hue = this.getHue(r/255,g/255,b/255);
-				var hsv = ComUtil.rgb2hsv({ r: r / 255, g: g / 255, b: b / 255 });
-				var hue = hsv.h;
-				if (hsv.v < 0.1 || hsv.s < 0.1) {
-					hue = -hsv.v;
-				}
-				// arr[i].aaa = hsv;
-				// var hue = r<<16+g<<8+b;
-				arr[i]._hue = hue;
-				// console.info(i, r, g, b, a, ",", hue, arr[i].name);
-				break;
+			// if (i == 4) {
+			// 	console.info(i, img.crossOrigin, img.src);
+			// 	continue;
+			// }
+			ctx.clearRect(0, 0, w, h);
+			var data = null;
+			try {
+				// console.info(img.width, img.height);
+				ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, w, h);
+				data = ctx.getImageData(0, 0, w, h);
+			} catch (ex) {
+				// console.info(i, img.crossOrigin, img.src);
+				ele = document.createElement("canvas");
+				ele.width = w;
+				ele.height = h;
+				ele.style.width = "" + w + "px";
+				ele.style.height = "" + h + "px";
+				ctx = ele.getContext("2d");
+
+				arr[i]._hue = -98;
+				continue;
 			}
+			var r = 0;
+			var g = 0;
+			var b = 0;
+			var a = 0;
+			var c = data.data.length / 4;
+			for (var j = 0; j < c; ++j) {
+				// var at = data.data[j * 4 + 3] / 255;
+				// var a2 = (a * j + at) / (j + 1);
+				// r = (r * a * j + data.data[j * 4 + 0] / c * at) / (j + 1) / a2;
+				// g = (g * a * j + data.data[j * 4 + 1] / c * at) / (j + 1) / a2;
+				// b = (b * a * j + data.data[j * 4 + 2] / c * at) / (j + 1) / a2;
+				// a = a2;
+				var at = data.data[j * 4 + 3];
+				if (at < a) {
+					continue;
+				}
+				r = data.data[j * 4 + 0];
+				g = data.data[j * 4 + 1];
+				b = data.data[j * 4 + 2];
+				a = at;
+			}
+
+			// var hue = this.getHue(r/255,g/255,b/255);
+			var hsv = ComUtil.rgb2hsv({ r: r / 255, g: g / 255, b: b / 255 });
+			var hh = hsv.h;
+			// var hue = hsv.h;
+			if (hsv.v < 0.3 || hsv.s < 0.15) {
+				// hue = -hsv.v;
+				hh = 361;
+				// hue = 361 * 100 + hsv.s * 10 + hsv.v;
+			}
+			var hue = hh * 100 + hsv.v * 10 + hsv.s;
+			// console.info(i, img.width, img.height, r, g, b, a, hsv.h, hsv.s, hsv.v, hue, arr[i].name);
+			// arr[i].aaa = hsv;
+			// var hue = r<<16+g<<8+b;
+			arr[i]._hue = hue;
+			// console.info(i, r, g, b, a, ",", hue, arr[i].name);
 		}
 
-		arr.sort((a, b) => a._hue - b._hue);
+		arr.sort(this.sortHue);
 		// console.info(arr);
 	}
 
@@ -552,7 +673,7 @@ export default class Home extends Vue {
 			document.execCommand("copy");
 		} else if (evt.detail == 2) {
 			// double click
-			if (it.isDir) {
+			if (it.type == "folder") {
 				this.path = this.path.replace(/[\\/]+$/, "") + "/" + it.name;
 			}
 			return;
@@ -776,12 +897,14 @@ export default class Home extends Vue {
 
 	onInputFocus() {
 		this.showQuickBox = false;
-		var ele = this.$refs.txtPath as any;
+		var ele = this.$refs.txtPath as HTMLInputElement;
 		ele && ele.select();
 	}
 
 	onInputBlur() {
 		this.showQuickBox = true;
+		var ele = this.$refs.txtPath as HTMLInputElement;
+		ele.selectionStart = ele.selectionEnd;
 	}
 
 	onQuickBoxMousewheel(evt) {

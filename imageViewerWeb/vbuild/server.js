@@ -34,6 +34,18 @@ module.exports = function(app) {
 			path = "test/" + path;
 			return path;
 		}
+
+		function getSuffix(path) {
+			path = path.replace(/.*[/\\]/, "");
+			var idx = path.lastIndexOf(".");
+			if (idx < 0) {
+				return "";
+			}
+			return path.substr(idx).toLowerCase();
+		}
+		var mapSuffixContentType = {
+			".svg": "image/svg+xml"
+		};
 		
 		app.get("/server/fs/readFile/:path(*)", function(req, res){
 			try{
@@ -43,6 +55,10 @@ module.exports = function(app) {
 					res.status(404);
 					res.send("");
 					return;
+				}
+				var suffix = getSuffix(path);
+				if (suffix in mapSuffixContentType) {
+					res.header("Content-Type", mapSuffixContentType[suffix]);
 				}
 				var rs = Fs.createReadStream(path);
 				rs.on('data',function(data){
@@ -110,11 +126,11 @@ module.exports = function(app) {
 		});
 
 		function getFileType(stat) {
-			var type = 0;
+			var type = "unknown";
 			if(stat.isFile()) {
-				type = 1;
+				type = "file";
 			} else if(stat.isDirectory()) {
-				type = 2;
+				type = "folder";
 			}
 			return type;
 		}
@@ -174,7 +190,7 @@ module.exports = function(app) {
 					return;
 				}
 
-				var arr = Fs.readdirSync(filePath);
+				var arr = Fs.readdirSync(path);
 				var rst = [];
 				for(var i = 0; i < arr.length; ++i) {
 					var stat = Fs.statSync(path + "/" + arr[i]);

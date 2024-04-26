@@ -4,7 +4,7 @@
 	<div class="hidden-box">
 		<input type="text" ref="copyInput" v-noSpell>
 		<div class="back"></div>
-		<canvas ref="cvsImg" width="50px" height="50px"></canvas>
+		<!-- <canvas ref="cvsImg" width="50px" height="50px"></canvas> -->
 	</div>
 	
 	<div class="center-cont">
@@ -14,7 +14,7 @@
 					<img src="static/image/arrowLeft.png" alt="">
 				</div>
 				<div class="input-box">
-					<input type="text" ref="txtPath" v-model="path" v-noSpell placeholder="输入路径..." :style="{'color':showQuickBox?'#fff':'#000'}" @focus="onInputFocus()" @blur="showQuickBox=true">
+					<input type="text" ref="txtPath" v-model="path" v-noSpell placeholder="输入路径..." :style="{'color':showQuickBox?'#fff':'#000'}" @focus="onInputFocus()" @blur="onInputBlur">
 					<div class="quick-box" v-show="showQuickBox" ref="quickBox" @mousewheel="onQuickBoxMousewheel($event)">
 						<div class="item" v-for="(it,idx) in lstPath" :key="idx" @click="onClickQuickItem(idx)">{{it}}</div>
 					</div>
@@ -78,7 +78,7 @@
 				</div>
 				<div class="row">
 					<div class="lbl">修改日期:</div>
-					<div class="size">{{formatTime(selectItem.modifyTime)}}</div>
+					<div class="size">{{formatTime(selectItem.mtimeMs)}}</div>
 				</div>
 			</div>
 			<div class="img-box" ref="detailImgBox" @mousewheel="onDetailMousewheel($event)" @mousedown="onDownSelect($event)">
