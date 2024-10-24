@@ -14,7 +14,7 @@
 		"axios": "^0.18.0",
 		"babel-polyfill": "^6.26.0",
 		"remove-strict-webpack-plugin": "^0.1.2",
-		"vue": "2.5.16",
+		"vue": "3.0.0",
 		"vue-class-component": "6.3.2",
 		"vue-property-decorator": "6.1.0",
 		"vue-router": "3.0.2",
