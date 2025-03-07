@@ -17,7 +17,7 @@
 	},
 	"dependencies": {
 		"@xxxxst/vue2-decorator": "^0.0.5",
-		"axios": "^0.21.1",
+		"axios": "^1.8.2",
 		"core-js": "^3.6.5",
 		"reflect-metadata": "^0.1.13",
 		"three": "^0.139.2",
